@@ -4,7 +4,6 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QString>
-#include <cstdarg>
 #include <cstdbool>
 
 extern "C" {
@@ -25,73 +24,53 @@ BasicCalculator::BasicCalculator(QWidget *parent)
     mainLayout = new QGridLayout;
     mainLayout->addWidget(screen, 0, 0, 1, 4, Qt::AlignRight);
 
-    addRow(
-        1, 4,
-        tr("+/-"), NEGATE_BUTTON, true,
-        tr("Prime"), PRIME_BUTTON, false,
-        tr("AC"), AC_BUTTON, true,
-        tr("<-"), BACK_BUTTON, true);
-    addRow(
-        2, 4,
-        tr("GCD"), GCD_BUTTON, false,
-        tr("LCM"), LCM_BUTTON, false,
-        tr("Sqrt"), SQRT_BUTTON, false,
-        tr("^"), EXP_BUTTON, false);
-    addRow(
-        3, 4,
-        tr("7"), SEVEN_BUTTON, true,
-        tr("8"), EIGHT_BUTTON, true,
-        tr("9"), NINE_BUTTON, true,
-        tr("/"), DIVIDE_BUTTON, true);
-    addRow(
-        4, 4,
-        tr("4"), FOUR_BUTTON, true,
-        tr("5"), FIVE_BUTTON, true,
-        tr("6"), SIX_BUTTON, true,
-        tr("*"), MULTIPLY_BUTTON, false);
-    addRow(
-        5, 4,
-        tr("1"), ONE_BUTTON, true,
-        tr("2"), TWO_BUTTON, true,
-        tr("3"), THREE_BUTTON, true,
-        tr("-"), SUBTRACT_BUTTON, true);
+    addButton(1, 0, tr("+/-"), NEGATE_BUTTON, true);
+    addButton(1, 1, tr("Prime"), PRIME_BUTTON, true);
+    addButton(1, 2, tr("AC"), AC_BUTTON, true);
+    addButton(1, 3, tr("<-"), BACK_BUTTON, true);
+
+    addButton(2, 0, tr("GCD"), GCD_BUTTON, true);
+    addButton(2, 1, tr("LCM"), LCM_BUTTON, false); // need multiply function
+    addButton(2, 2, tr("Sqrt"), SQRT_BUTTON, true);
+    addButton(2, 3, tr("^"), EXP_BUTTON, false);
+
+    addButton(3, 0, tr("7"), SEVEN_BUTTON, true);
+    addButton(3, 1, tr("8"), EIGHT_BUTTON, true);
+    addButton(3, 2, tr("9"), NINE_BUTTON, true);
+    addButton(3, 3, tr("/"), DIVIDE_BUTTON, true);
+
+    addButton(4, 0, tr("4"), FOUR_BUTTON, true);
+    addButton(4, 1, tr("5"), FIVE_BUTTON, true);
+    addButton(4, 2, tr("6"), SIX_BUTTON, true);
+    addButton(4, 3, tr("*"), MULTIPLY_BUTTON, false);
+
+    addButton(5, 0, tr("1"), ONE_BUTTON, true);
+    addButton(5, 1, tr("2"), TWO_BUTTON, true);
+    addButton(5, 2, tr("3"), THREE_BUTTON, true);
+    addButton(5, 3, tr("-"), SUBTRACT_BUTTON, true);
 
     mainLayout->addWidget(zeroButton, 6, 0, 1, 2);
     mainLayout->addWidget(equalButton, 6, 2);
     mainLayout->addWidget(plusButton, 6, 3);
 
-    connect(zeroButton, &QPushButton::clicked, [this]() { this->buttonPressed(ZERO_BUTTON); });
-    connect(equalButton, &QPushButton::clicked, [this]() { this->buttonPressed(EQUAL_BUTTON); });
-    connect(plusButton, &QPushButton::clicked, [this]() { this->buttonPressed(ADD_BUTTON); });
+    connect(zeroButton, &QPushButton::clicked, this, [this]() { this->buttonPressed(ZERO_BUTTON); });
+    connect(equalButton, &QPushButton::clicked, this, [this]() { this->buttonPressed(EQUAL_BUTTON); });
+    connect(plusButton, &QPushButton::clicked, this, [this]() { this->buttonPressed(ADD_BUTTON); });
 
     setLayout(mainLayout);
     setWindowTitle(tr("Basic Calculator"));
 }
 
-void BasicCalculator::addRow(int row, int nItems, QString item, ButtonPressed buttonPressed, bool implemented, ...)
+void BasicCalculator::addButton(int row, int col, QString label, ButtonPressed pressed, bool isImplemented)
 {
-    va_list items;
-    va_start(items, implemented);
+    QPushButton *button = new QPushButton(label);
 
-    bool currentImplemented = implemented;
-    ButtonPressed currentButtonPressed = buttonPressed;
-    QString* current = &item;
-    for (int i = 0; i < nItems; i++) {
-        if (i != 0) {
-            current = va_arg(items, QString*);
-            currentButtonPressed = (ButtonPressed) va_arg(items, int);
-            currentImplemented = (bool) va_arg(items, int);
-        }
+    button->setEnabled(isImplemented);
+    mainLayout->addWidget(button, row, col);
 
-        QPushButton *button = new QPushButton(*current);
-        button->setEnabled(currentImplemented);
-        mainLayout->addWidget(button, row, i);
-        connect(button, &QPushButton::clicked, [this, currentButtonPressed]() {
-            this->buttonPressed(currentButtonPressed);
-        });
-    }
-
-    va_end(items);
+    connect(button, &QPushButton::clicked, this, [this, pressed]() {
+        this->buttonPressed(pressed);
+    });
 }
 
 void BasicCalculator::clear()
@@ -127,9 +106,14 @@ void BasicCalculator::buttonPressed(ButtonPressed pressed)
             currentNumber /= 10;
             affectNumberChanges = true;
         }
-    } else if (ADD_BUTTON <= pressed && pressed <= EXP_BUTTON) {
+    } else if (ADD_BUTTON <= pressed && pressed <= SQRT_BUTTON) {
         op = (Operation)(pressed - ADD_BUTTON + ADD_OP);
         hasJustPressedOp = true;
+
+        if (PRIME_OP <= op && op <= SQRT_OP) {
+            buttonPressed(EQUAL_BUTTON);
+            return;
+        }
     } else if (pressed == EQUAL_BUTTON && op != NOOP) {
         int result = 0;
 
@@ -142,6 +126,18 @@ void BasicCalculator::buttonPressed(ButtonPressed pressed)
             break;
         case DIVIDE_OP:
             result = divide(firstNumber, secondNumber);
+            break;
+        case GCD_OP:
+            result = gcd(firstNumber, secondNumber);
+            break;
+        case LCM_OP:
+            result = lcm(firstNumber, secondNumber);
+            break;
+        case PRIME_OP:
+            result = prime(firstNumber);
+            break;
+        case SQRT_OP:
+            result = sqroot(firstNumber);
             break;
         }
 
@@ -175,12 +171,25 @@ void BasicCalculator::updateDisplay()
         case DIVIDE_OP:
             opString = " /";
             break;
+        case GCD_OP:
+            opString = "GCD(";
+            break;
+        case LCM_OP:
+            opString = "LCM(";
+            break;
+        case PRIME_OP:
+        case SQRT_OP:
+            break;
         }
 
-        display += opString;
-
-        if (!hasJustPressedOp) {
-            display += " " + QString::number(secondNumber);
+        QString secondNumberString = QString::number(secondNumber);
+        if (GCD_OP <= op && op <= LCM_OP) {
+            display = opString + display + ", " + secondNumberString + ")";
+        } else {
+            display += opString;
+            if (!hasJustPressedOp) {
+                display += " " + secondNumberString;
+            }
         }
     }
 

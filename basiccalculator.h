@@ -2,7 +2,6 @@
 #define BASICCALCULATOR_H
 
 #include <QWidget>
-#include <cstdarg>
 #include <cstdbool>
 
 class QLabel;
@@ -28,11 +27,11 @@ enum ButtonPressed {
     SUBTRACT_BUTTON,
     MULTIPLY_BUTTON,
     DIVIDE_BUTTON,
-    PRIME_BUTTON,
+    EXP_BUTTON,
     GCD_BUTTON,
     LCM_BUTTON,
-    SQRT_BUTTON,
-    EXP_BUTTON
+    PRIME_BUTTON,
+    SQRT_BUTTON
 };
 
 enum Operation {
@@ -41,11 +40,11 @@ enum Operation {
     SUBTRACT_OP,
     MULTIPLY_OP,
     DIVIDE_OP,
-    PRIME_OP,
+    EXP_OP,
     GCD_OP,
     LCM_OP,
-    SQRT_OP,
-    EXP_OP
+    PRIME_OP,
+    SQRT_OP
 };
 
 class BasicCalculator : public QWidget
@@ -69,7 +68,7 @@ private:
 
     void clear();
     void updateDisplay();
-    void addRow(int row, int nItems, QString item, ButtonPressed button, bool implemented, ...);
+    void addButton(int row, int col, QString label, ButtonPressed pressed, bool isImplemented);
 
 };
 
